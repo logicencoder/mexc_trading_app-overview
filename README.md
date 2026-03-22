@@ -8,6 +8,9 @@
 This product is a **standalone local application** (desktop-style local runtime), **not a hosted SaaS web app**.
 It runs on your own machine, serves a local interface, and connects directly to exchange APIs/streams.
 
+- Current delivery mode: **standalone local-first runtime**
+- Live website mode: **not the primary target for this app**
+
 ## UI Snapshot
 
 ![MEXC Standalone Dashboard](assets/mexc-trading-dashboard-bot-overview.png)
@@ -28,6 +31,7 @@ A single operator console for:
 - **Realtime transport**: WebSocket + REST hybrid data flow
 - **Storage/runtime state**: local persistence + runtime snapshots/log-style artifacts
 - **Deployment style**: standalone local runtime with direct exchange connectivity
+- **Integration style**: API-first backend that can feed other controlled frontend surfaces when needed
 
 ## High-Level Architecture
 
@@ -149,6 +153,18 @@ A single operator console for:
 
 ## Intended Audience
 
-- Product/strategy collaborators
-- Technical reviewers
-- Integration stakeholders needing a capability map without private implementation disclosure
+### Recruiters
+
+Use this to evaluate practical delivery scope: realtime backend + operator UI + automation + diagnostics in one shipped system.
+
+### System Engineers
+
+Use this to review websocket/REST reconciliation patterns, local-first runtime tradeoffs, and observability surfaces.
+
+### Collaborators
+
+Use this to understand extension areas: strategy modes, order workflows, and integration points.
+
+### Potential Employers
+
+Use this as a concise capability map for low-latency product engineering and production-minded optimization.
