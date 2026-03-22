@@ -10,7 +10,7 @@ It runs on your own machine, serves a local interface, and connects directly to 
 
 ## UI Snapshot
 
-![MEXC Standalone Dashboard](assets/mexc-dashboard-overview.png)
+![MEXC Standalone Dashboard](assets/mexc-trading-dashboard-bot-overview.png)
 
 ## What the platform is
 
