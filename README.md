@@ -21,6 +21,14 @@ A single operator console for:
 - Multi-mode bot automation
 - Runtime diagnostics and operational control
 
+## Tech Stack Used
+
+- **Backend**: Python, FastAPI, async API handlers, exchange REST/WS integrations
+- **Frontend**: HTML/CSS/JavaScript single-page operator dashboard
+- **Realtime transport**: WebSocket + REST hybrid data flow
+- **Storage/runtime state**: local persistence + runtime snapshots/log-style artifacts
+- **Deployment style**: standalone local runtime with direct exchange connectivity
+
 ## High-Level Architecture
 
 - **Local Frontend Runtime**: interactive trading console, local state orchestration, panelized workspace UI
