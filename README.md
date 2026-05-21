@@ -1,170 +1,297 @@
-# MEXC Dashboard + Multi-Mode Bot (Standalone) — Overview
+# MEXC Trading Dashboard + Spot Bot — Public Overview
 
-> This repository is an **overview repository**.
-> It is intentionally non-sensitive and does not contain private implementation code.
+How the **standalone local trading console** works for operators who run it on their own hardware.  
+No API keys, hostnames, or private source in this repository.
 
-## Positioning
+**Private implementation:** [mexc_trading_app](https://github.com/logicencoder/mexc_trading_app) (invitation only)
 
-This product is a **standalone local application** (desktop-style local runtime), **not a hosted SaaS web app**.
-It runs on your own machine, serves a local interface, and connects directly to exchange APIs/streams.
+![MEXC standalone dashboard](assets/mexc-trading-dashboard-bot-overview.png)
 
-- Current delivery mode: **standalone local-first runtime**
-- Live website mode: **not the primary target for this app**
+---
 
-## UI Snapshot
+## Purpose
 
-![MEXC Standalone Dashboard](assets/mexc-trading-dashboard-bot-overview.png)
+### What
 
-## What the platform is
+A self-hosted application that opens in the browser on the operator’s machine: live MEXC spot order book, trade tape, wallet balances, open orders, fill history, deposit notifications, manual order buttons, and a two-mode trading bot (MODE1 book-reactive, MODE2 grid limit).
 
-A single operator console for:
+### Why it exists
 
-- Realtime market observation
-- Fast manual order execution
-- Multi-mode bot automation
-- Runtime diagnostics and operational control
+Exchange websites optimize for retail click-trading, not for:
 
-## Tech Stack Used
+- Watching one altcoin book while automating reactions inside a price band  
+- Streaming private account protobuf frames next to public depth  
+- Switching symbols without the UI mixing stale feed data  
 
-- **Backend**: Python, FastAPI, async API handlers, exchange REST/WS integrations
-- **Frontend**: HTML/CSS/JavaScript single-page operator dashboard
-- **Realtime transport**: WebSocket + REST hybrid data flow
-- **Storage/runtime state**: local persistence + runtime snapshots/log-style artifacts
-- **Deployment style**: standalone local runtime with direct exchange connectivity
-- **Integration style**: API-first backend that can feed other controlled frontend surfaces when needed
+This product keeps control local: your keys, your process, your risk parameters.
 
-## High-Level Architecture
+### Who benefits
 
-- **Local Frontend Runtime**: interactive trading console, local state orchestration, panelized workspace UI
-- **Local API Layer**: order/bot endpoints, market/account data aggregation, diagnostics APIs
-- **Exchange Integration Layer**: REST + WS streaming for prices, orders, balances, fills, and account events
-- **Bot Engine Layer**: MODE1..MODE5 execution strategies, safety controls, scheduling, and runtime state
-- **Persistence Layer**: local runtime artifacts (history/debug snapshots, optional local DB/logs)
+| Audience | Value |
+|----------|--------|
+| **Active spot traders** | One screen for book + account + bot |
+| **Market makers / support traders** | MODE1 reacts when liquidity appears in a band |
+| **Operators** | Connection health, client log capture, dry-run bot |
 
-## Full Feature Inventory (Comprehensive)
+### How it fits
 
-### A) Workspace & Operator Experience
+Not the same as [mexc-live-stats-backend](https://github.com/logicencoder/mexc-live-stats-backend-overview) (public stats site). This app is **local-first**, not the LogicEncoder.com multi-coin stats dashboard.
 
-1. Standalone local runtime (no hosted backend dependency)
-2. Dark low-latency operator dashboard layout
-3. Multi-tab workspace (Trading / Funds History / System Stats / Multi Bots / Debug Logs)
-4. Top status badge strip for key feed domains
-5. Symbol-focused trading context at top bar
-6. Fast symbol switch control
-7. Favorites/quick symbol access
-8. Local notification ticker for important events
-9. Compact panel collapse/expand behavior
-10. Persisted workspace/UI settings between sessions
+---
 
-### B) Market Visibility
+## Delivery model
 
-11. Realtime trade tape
-12. Realtime orderbook stream
-13. Best bid/ask spread visibility
-14. Orderbook cumulative quantity columns
-15. Orderbook cumulative notional columns
-16. Bid/ask independent sorting controls
-17. "Highlight my orders" on orderbook
-18. Last traded price with directional arrow
-19. Integrated chart panel (TV/custom modes)
-20. Symbol synchronization across chart + trading panels
+### What
 
-### C) Manual Trading Workflows
+Runs as FastAPI + static HTML/JS on localhost (or Docker on the same host). Connects outbound to MEXC only.
 
-21. Buy/Sell manual side controls
-22. Market and Limit order support in UI flow
-23. Quantity input with numeric steppers
-24. Price input with numeric steppers
-25. Amount-based entry helpers
-26. Unit switching (`COINS` / `USDT`) for sizing logic
-27. Slippage tolerance input for market-like flows
-28. Quick amount shortcut buttons
-29. Validation of required fields before submission
-30. Immediate feedback alerts on order action outcome
+### Why
 
-### D) Open Orders & Activity
+Avoids hosting custody of user API secrets on a shared server.
 
-31. Open orders panel with action controls
-32. Order history panel in same activity area
-33. Optional cross-symbol open-order visibility
-34. On-row cancel action
-35. On-row modify/replace action
-36. Immediate pending visual feedback on cancel
-37. Immediate pending visual feedback on replace
-38. Anti-resurrection local hide logic for stale rows
-39. REST + WS reconciliation to reduce stale UI state
-40. Strict fallback refresh after final order transitions
+### Who
 
-### E) Bot Core & Strategies
+Operators comfortable running Python on SOL/WSL/desktop.
 
-41. MODE1 execution strategy support
-42. MODE2 grid-mint style support
-43. MODE3 re-entry ladder support
-44. MODE4 front-book requote support
-45. MODE5 scheduled execution support
-46. Mode-specific controls shown/hidden by selection
-47. Bot side selection (`BUY` / `SELL`)
-48. Bot unit selection (`COINS` / `USDT`)
-49. Mode1 execution style variants (TAKE/PING/50-50/RANDOM)
-50. Mode5 exact time scheduling (`HH:MM:SS`)
+### How
 
-### F) Bot Safety, Limits, and Randomization
+Download private repo, add `mexc_keys.json` locally, start `run_server.sh`.
 
-51. Max sum use limits
-52. Max order sizing constraints
-53. Min order notional guardrails
-54. Tiny leftover handling thresholds
-55. Random price variation toggle
-56. Random amount range controls
-57. Dry-run mode
-58. Ping-hold timing controls
-59. Mode3 stop conditions
-60. Continue-until-budget controls
+---
 
-### G) Multi-Bot & Presets
+## Realtime market observation
 
-61. Multi-bot profile creation
-62. Multi-bot profile load/apply
-63. Multi-bot profile start/stop controls
-64. Profile-specific preset snapshots
-65. Main panel preset save
-66. Main panel preset load
-67. Main panel preset delete
-68. Preset-aware mode/side/unit restoration
+### What
 
-### H) Diagnostics, Logging, and Reliability
+- **Order book** — bids/asks, spread; optional highlight of your resting orders  
+- **Trades tape** — time, price, size, side from MEXC V3 protobuf public stream  
+- **Ticker** — REST snapshot for 24h context  
+- **Symbol switch** — change pair; server unsubscribes old symbol to prevent cross-feed glitches  
 
-69. System status panel with feed-level visibility
-70. API/feed connectivity indicators
-71. Performance panel with runtime metrics
-72. Backend timing support for modify-order path analysis
-73. Client-side perf metrics tracking in UI
-74. Debug logs panel with filters/search
-75. Client console mirroring to backend endpoint
-76. Operational refresh controls (orders/perf/status)
-77. Notification controls (including symbol-switch alert mute)
-78. Runtime error visibility surfaces
+### Why
 
-## Security & Exposure Policy
+Manual and bot decisions need synchronized book + tape + account state.
 
-- This overview repo excludes private source internals.
-- No exchange credentials are stored in this repo.
-- Intended for architecture/features communication only.
+### Who
 
-## Intended Audience
+Traders monitoring thin altcoin books (e.g. DNX/USDT style pairs).
 
-### Recruiters
+### How
 
-Use this to evaluate practical delivery scope: realtime backend + operator UI + automation + diagnostics in one shipped system.
+WebSocket endpoints `/ws/orderbook` and `/ws/trades` fan out from server-side MEXC connections.
 
-### System Engineers
+---
 
-Use this to review websocket/REST reconciliation patterns, local-first runtime tradeoffs, and observability surfaces.
+## Account visibility
 
-### Collaborators
+### What
 
-Use this to understand extension areas: strategy modes, order workflows, and integration points.
+Live panels for:
 
-### Potential Employers
+- **Balances** (free/locked per asset)  
+- **Open orders** and **order history**  
+- **Deals** (executions)  
+- **Deposits** (polling + events)  
 
-Use this as a concise capability map for low-latency product engineering and production-minded optimization.
+### Why
+
+Bots and manual orders both need immediate feedback when fills or deposits arrive.
+
+### Who
+
+Anyone running inventory-aware strategies.
+
+### How
+
+Private MEXC listen-key WebSocket with protobuf account/order/deal channels; REST for history and deposits.
+
+---
+
+## Manual order execution
+
+### What
+
+Place, cancel, and modify limit orders from the UI via REST API wrappers with exchange precision and min-notional checks.
+
+### Why
+
+Operators want one-click actions without leaving the custom layout.
+
+### Who
+
+Humans overriding or supplementing the bot.
+
+### How
+
+`POST /api/orders/place`, `DELETE /api/orders/cancel`, `PUT /api/orders/modify`.
+
+---
+
+## Bot MODE1 — book-reactive execution
+
+### What
+
+When the bot runs in MODE1 it watches the order book. If opposing liquidity appears between **min price** and **max price**, it sends a **limit IOC** order (immediate-or-cancel — does not leave resting liquidity on the book).
+
+Configurable:
+
+- **Side** — BUY or SELL  
+- **Size cap** — max coins per hit (0 = unlimited within budget)  
+- **Budget** — max total USDT or coins to spend  
+- **Execution style** — TAKE, PING, ALTERNATE, RANDOM  
+- **Random amount** — optional random coin size per hit  
+- **Dry run** — log without sending orders  
+
+### Why
+
+Useful when you want to **take** or **ping** liquidity that appears in a band without manually clicking — e.g. supporting a market or reacting to shown size.
+
+### Who
+
+Operators automating reactions in a known price corridor.
+
+### How
+
+`bot_engine.TradingBot.on_orderbook_update()` → signed REST limit IOC; cooldown between executions; stuck-order recovery if cancel fails.
+
+---
+
+## Bot MODE2 — grid limit
+
+### What
+
+Places a limit order inside the price range; when filled, replaces with a new limit at another price in the band (optional random price).
+
+### Why
+
+Classic grid-style quoting inside min/max without building a full external grid framework.
+
+### Who
+
+Operators providing two-sided or one-sided liquidity in a range.
+
+### How
+
+`start_mode2()` + monitor task watching private order/fill stream.
+
+---
+
+## Bot safety and limits
+
+### What
+
+- **Max order size** toggle  
+- **Total amount to use** (USDT or coin denomination)  
+- **Min notional** from exchange rules  
+- **Safety halt** inside engine  
+- **Stop** endpoint tears down bot and monitor tasks  
+
+### Why
+
+Prevents runaway loops when feeds glitch or parameters are mis-set.
+
+### Who
+
+Anyone running real capital (not dry-run).
+
+### How
+
+Validated in `POST /api/bot/start` before `TradingBot.start()`.
+
+---
+
+## Connection health
+
+### What
+
+Status API and `/ws/status` report which feeds are alive: trades, account, order book, REST API. UI can mark feeds stale.
+
+### Why
+
+Protobuf WS drops silently without visible cues — operators need to pause bots when blind.
+
+### Who
+
+Maintainers during network or exchange incidents.
+
+### How
+
+`connection_status` dict updated in feed loops; logged on reconnect.
+
+---
+
+## Diagnostics
+
+### What
+
+- Browser console log batch upload to server file  
+- Bot log WebSocket stream  
+- `/health` liveness  
+
+### Why
+
+Reproduce UI issues without screen recording.
+
+### Who
+
+Developers and operators post-morteming a session.
+
+### How
+
+`POST /api/client-logs` → `logs/client_console.log`.
+
+---
+
+## Workspace UI
+
+### What
+
+Dark, panelized dashboard: trading tab, funds history, stats, multi-bot panel (single bot instance in current code), debug logs.
+
+### Why
+
+Reduce eye travel during fast markets.
+
+### Who
+
+Power users on large monitors.
+
+### How
+
+`mexc_trading_app.html` + `mexc_trading_app.js` — no separate frontend build chain.
+
+---
+
+## Tech stack (non-secret)
+
+| Piece | Choice |
+|-------|--------|
+| API server | Python, FastAPI, asyncio |
+| Exchange protocol | MEXC Spot V3 REST + WebSocket protobuf |
+| UI | Static HTML/CSS/JS |
+| Optional packaging | Docker |
+
+---
+
+## What this product is not
+
+- Not a cloud SaaS — you run the process  
+- Not the MEXC Live Stats public website product  
+- Not futures/perpetuals — spot-focused codebase  
+- Not MODE3–MODE5 — only **MODE1** and **MODE2** exist in the current engine  
+
+---
+
+## Repository map
+
+| Repo | Visibility |
+|------|------------|
+| `mexc_trading_app` | Private code |
+| `mexc_trading_app-overview` | This document |
+
+---
+
+## Evaluation
+
+For access to the private repository or operational questions, contact LogicEncoder via the website contact channels.  
+Do not request API keys in public issues on this overview repo.
