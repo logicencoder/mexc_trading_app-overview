@@ -32,6 +32,18 @@ Live panels for balances (free/locked), open orders, order history, deals (execu
 
 Dry-run support, preset save/load, connection health indicators, and client log capture for incident debugging.
 
+## System Stats
+
+Per-feed counters, stale-feed warnings, WebSocket age, and REST fallback when a private stream stops updating.
+
+![System Stats — feed health and stream diagnostics](assets/system-stats.png)
+
+## Debug Logs
+
+Searchable event table with level, source, page, and message — order traces, precision updates, and WS stale warnings.
+
+![Debug Logs — filtered client log stream](assets/debug-logs.png)
+
 ## Stack
 
 FastAPI backend (`mexc_trading_app.py`), browser UI (`mexc_trading_app.html` + `mexc_trading_app.js`), `bot_engine.py`, and `generated_proto/` for stream decode. Local SQLite runtime history under `data/`.
