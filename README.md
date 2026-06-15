@@ -2,27 +2,27 @@
 
 ![MEXC Trading Dashboard — live book, tape, balances, and bot controls](assets/trading-dashboard.png)
 
-Self-hosted **MEXC spot trading console** — live order book, trade tape, balances, open orders, fill history, deposit notifications, manual order buttons, and **five automation modes** in one browser dashboard. Active traders and bot operators run it locally (or in Docker on a host they control); API keys stay on the machine and traffic goes outbound to MEXC only — no shared SaaS layer. The exchange retail UI scatters book, account, and bot state across pages and often shows **stale depth after a symbol change**; this product keeps everything on one screen with protobuf WebSocket feeds, REST backfill when a stream lags, and symbol-switch hygiene so old feeds do not paint the wrong market.
+Self-hosted **MEXC spot trading console** — live order book, trade tape, balances, open orders, fill history, deposit notifications, manual order buttons, and **five automation modes** in one browser dashboard on **a machine you control**. Active traders and bot operators keep API keys local; traffic goes outbound to MEXC only. The exchange retail UI scatters book, account, and bot state across pages and often shows **stale depth after a symbol change**; this product keeps everything on one screen with protobuf WebSocket feeds, REST backfill when a stream lags, and symbol-switch hygiene so old feeds do not paint the wrong market.
 
 ## Tech stack
 
 | Layer | Technologies |
 |-------|--------------|
 | Backend | Python 3, FastAPI, uvicorn, asyncio worker queues |
-| Bot engine | `bot_engine.py` — `TradingBot` with MODE1–MODE5, multi-bot registry |
+| Bot engine | MODE1–MODE5 automation profiles, multi-bot registry |
 | Frontend | HTML, CSS (Tailwind-style dark UI), vanilla JavaScript |
-| Exchange | MEXC Spot V3 REST + protobuf WebSocket (`generated_proto/`) |
+| Exchange | MEXC Spot V3 REST + protobuf WebSocket |
 | Public streams | Aggregated deals, limit depth order book |
 | Private streams | Listen-key account, orders, deals; deposit poll + WS queue |
-| Persistence | SQLite (`funds_events`, deals, bot log history) under `data/` |
-| Diagnostics | `POST /api/client-logs`, `/ws/debug_logs`, System Stats + Debug Logs tabs |
-| Deployment | `./run_server.sh` or optional Docker on the same host |
+| Persistence | SQLite for funds events, deals, and bot log history |
+| Diagnostics | System Stats and Debug Logs tabs, client log ingest |
+| Deployment | Shell launcher or optional Docker on the same host |
 
 ## Top bar — symbol, health, and alerts
 
 The header stays visible on every workspace tab:
 
-- **Live symbol** with last price and direction arrow; **symbol input** normalizes pairs (e.g. `DNX` → `DNXUSDT`) and calls `POST /api/symbol/switch` so public and private feeds unsubscribe the old market before subscribing the new one.
+- **Live symbol** with last price and direction arrow; **symbol input** normalizes pairs (e.g. `DNX` → `DNXUSDT`) and switches the active market so public and private feeds unsubscribe the old pair before subscribing the new one.
 - **Feed LEDs** — trades, balances, orders, deals, deposits, order book, bot logs, status WebSocket, and REST API access — each with a message counter so you see which pipe is alive without opening logs.
 - **Favorites** — star the active pair; up to five quick-switch buttons in the notification bar.
 - **Notification ticker** — scrollable bar for fills, deposits, withdrawals, bot events, and connection notices; filters and TTL live in Settings (bot logs, funds, connections).
@@ -36,7 +36,7 @@ The default **Trading** tab is a three-column, **drag-and-drop** dashboard. Ever
 
 The left **Bot** column is the automation control center: mode picker, buy/sell side, price range, sizing, budgets, randomization, presets, dry-run, start/stop, live status (executions, volume, safety halt), and a **Bot Settings Summary** card.
 
-| Mode | What it does |
+| Mode | Behavior |
 |------|----------------|
 | **MODE1 — Instant execution** | Watches the live order book; when liquidity appears inside your min/max range, fires **limit IOC** orders (no resting liquidity). Execution style: **TAKE**, **PING**, **50/50 ALTERNATE**, or **RANDOM**; optional `ping_hold_ms` pause between fills. Cooldown and stuck-order recovery if a cancel fails. |
 | **MODE2 — Grid limit orders** | Places a limit inside the band and **replenishes after each fill**; optional random price pick within range. |
@@ -64,11 +64,11 @@ Three sub-tabs in one stack:
 
 - **Open orders** — cancel/modify actions, current-symbol vs all-symbol toggle, REST refresh button.
 - **History** — recent closed/canceled orders for the session.
-- **Bot logs** — streaming `/ws/bot_logs` lines while a bot runs (also persisted server-side).
+- **Bot logs** — streaming bot log lines while a bot runs (also persisted server-side).
 
 ### Account balances
 
-Available, locked, and total per asset for monitored base/quote coins; privacy hide toggle and manual refresh on `/api/account/balances`.
+Available, locked, and total per asset for monitored base/quote coins; privacy hide toggle and manual balance refresh.
 
 ### Live trades tape
 
@@ -76,7 +76,7 @@ Public agg-deals stream: time, price, amount, USDT notional, side; trade count a
 
 ## Funds History workspace
 
-Separate tab — **Funds Full History** from SQLite (`/api/history/funds/persisted`): deposits and withdrawals with asset, status, amount, network, tx id, and timestamp. Filter by kind (all / deposit / withdrawal) and asset code; complements the live deposit notification stream in the top bar.
+Separate tab — **Funds Full History** from SQLite: deposits and withdrawals with asset, status, amount, network, tx id, and timestamp. Filter by kind (all / deposit / withdrawal) and asset code; complements the live deposit notification stream in the top bar.
 
 ## System Stats workspace
 
@@ -86,15 +86,15 @@ Feed-health dashboard for incident triage — per-stream message totals, stale-f
 
 ## Multi Bots workspace
 
-**Multi Bot Profiles** — save named profiles (symbol, MODE1–MODE5, optional note) in the browser, then **start/stop each profile independently** via `bot_id` on `/api/bot/start` and `/api/bots/status`. Run different modes on different symbols concurrently without overwriting the main Bot panel config.
+**Multi Bot Profiles** — save named profiles (symbol, MODE1–MODE5, optional note) in the browser, then **start/stop each profile independently**. Run different modes on different symbols concurrently without overwriting the main Bot panel config.
 
 ## Debug Logs workspace
 
-Searchable forensic stream from `/ws/debug_logs` and client POST batching: filter by level, kind (order, balance, bot, orderbook, funds, ws, perf, ui), and source; hide ping noise; search by trace id, order id, or free text. Counters for total, client, warnings, errors, and order traces — same events land in `logs/client_console.log` for sharing after an incident.
+Searchable forensic stream from the debug WebSocket and client log batching: filter by level, kind (order, balance, bot, orderbook, funds, ws, perf, ui), and source; hide ping noise; search by trace id, order id, or plain-text query. Counters for total, client, warnings, errors, and order traces — same events land in a server-side log file for sharing after an incident.
 
 ![Debug Logs — filtered client log stream](assets/debug-logs.png)
 
-## Reliability behaviors (from code)
+## Reliability behaviors
 
 - **Symbol switch** — unsubscribes old public depth/trades and rebinds private streams; anti-crossfeed ignores late frames from the previous symbol.
 - **Stale private feeds** — UI shows age in seconds; orders panel may run REST open-order refresh when the orders WebSocket stops updating.
