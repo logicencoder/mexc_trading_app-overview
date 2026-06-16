@@ -38,7 +38,7 @@ When best bid/ask shifts or volume prints spike, you need updated depth, your ro
 
 **Bot modes tied to book speed:** **MODE3 — Step Re-entry Ladder** (product name) places the next limit **Step Percent** away after each full fill. **MODE4 — Front of Book** re-quotes on **Poll Seconds** when your quote is no longer at best bid/ask. **MODE1** **PING/TAKE** fires inside your min/max band with **Ping Hold (ms)** between hits. **Manual path:** **Activity → Open orders** — **C** cancel, **M** modify, **Refresh** when the orders WebSocket stalls; no exchange submenu.
 
-**Example:** front-of-book quote gets jumped → watch **Order book** update in the same second as **Bot logs**; open **Performance → Live** and confirm `place_order` and `order_ws_latency_ms` stay in a range you accept before sizing up.
+When a front-of-book quote gets jumped → watch **Order book** update in the same second as **Bot logs**; open **Performance → Live** and confirm `place_order` and `order_ws_latency_ms` stay in a range you accept before sizing up.
 
 ## Custom layout — drag, collapse, resize, persist
 
@@ -50,7 +50,7 @@ The **Trading** workspace is a three-column grid (`leftColumn`, `centerColumn`, 
 
 **Settings → Save Layout** writes panel order, collapse state, and heights. **Reset Layout** restores factory panel arrangement. **Snapshot UI** exports a JSON snapshot of the current layout + key UI toggles for sharing or backup. **Apply** / **Reset** in Settings only touch numeric/checkbox fields in the overlay (heights, rows, notification bar, bot-related thresholds) without wiping drag order unless you hit **Reset Layout**.
 
-**Example:** you want the **Order book** taller during a volatile session → drag the panel edge or raise **Orderbook Height (px)** in Settings → **Apply** → **Save Layout**. Next browser refresh keeps the same stack order and heights.
+When you want the **Order book** taller during a volatile session → drag the panel edge or raise **Orderbook Height (px)** in Settings → **Apply** → **Save Layout**. Next browser refresh keeps the same stack order and heights.
 
 ## Settings menu — every control
 
@@ -101,7 +101,7 @@ The header stays visible on every workspace tab:
 - **Notification ticker** — scrollable bar with ◀/▶ stepping; honors Max Chips, TTL, timestamp toggle, and funds/bot/connection filters above.
 - **Settings** — layout and notification controls documented in the previous section.
 
-**Example:** you switched from `BTCUSDT` to `DNXUSDT` but the tape still shows old prints — check **msgTrades** and **order book** LED counters; if frozen, confirm symbol input applied and watch counters reset after resubscribe. Stale **orders** LED → open **Activity → Open orders** and hit REST refresh while **System Stats** shows orders feed age climbing.
+When you switched from `BTCUSDT` to `DNXUSDT` but the tape still shows old prints — check **msgTrades** and **order book** LED counters; if frozen, confirm symbol input applied and watch counters reset after resubscribe. Stale **orders** LED → open **Activity → Open orders** and hit REST refresh while **System Stats** shows orders feed age climbing.
 
 ## Bot panel — complete control reference
 
@@ -166,7 +166,7 @@ Switching mode shows/hides **Mode Controls** and toggles which range fields appl
 
 ![Bot panel — MODE1 style row, Status, Start/Stop, Dry Run](assets/bot-mode1-status.png)
 
-**Example:** test a new band without risk → enable **Dry Run**, pick **MODE1**, set min/max around the current book, choose **PING** + **Ping Hold 500**, start bot, read lines in **Activity → Bot logs**. Ready for live → disable dry run, enable **Total Amount** in USDT, watch **Safety** flip to halt if budget hits zero mid-session.
+To test a new band without risk → enable **Dry Run**, pick **MODE1**, set min/max around the current book, choose **PING** + **Ping Hold 500**, start bot, read lines in **Activity → Bot logs**. Ready for live → disable dry run, enable **Total Amount** in USDT, watch **Safety** flip to halt if budget hits zero mid-session.
 
 ## Bot Settings Summary panel
 
@@ -202,7 +202,7 @@ Appended below (client-side, no backend required):
 
 **Refresh** forces a fetch; **Reset View** clears the displayed table without wiping server counters. Order traces also log to **Debug Logs** (`kind=order`, `perf`) with searchable `traceId`.
 
-**Example:** MODE4 re-quotes feel sluggish → enable **Live**, fire one manual limit from **Trading**, watch `place_order` vs `order_ws_latency_ms`. High REST but low WS → network or MEXC API; high WS but high `order_first_render_ms` → UI path; cross-check **Debug Logs** filtered by `perf`.
+MODE4 re-quotes feel sluggish → enable **Live**, fire one manual limit from **Trading**, watch `place_order` vs `order_ws_latency_ms`. High REST but low WS → network or MEXC API; high WS but high `order_first_render_ms` → UI path; cross-check **Debug Logs** filtered by `perf`.
 
 ![Performance panel — Live toggle, bot meta, Latency (ms) table, Refresh / Reset View](assets/performance-panel.png)
 
@@ -210,7 +210,7 @@ Appended below (client-side, no backend required):
 
 Manual **Buy/Sell** with limit or market type, price and quantity spinners, **25/50/75/100%** balance shortcuts, quote/base preset buttons ($25–$250 / 0.1–1 coin on market amount group), market **slippage tolerance**, server-side precision and min-notional checks, and REST refresh when the orders WebSocket goes stale.
 
-**Example:** quick scale-out → **Sell**, **market**, **100%** base balance with slippage tolerance set; confirm fill in **Activity → History** and the notification ticker before starting **MODE2** on the other side.
+For a quick scale-out → **Sell**, **market**, **100%** base balance with slippage tolerance set; confirm fill in **Activity → History** and the notification ticker before starting **MODE2** on the other side.
 
 ## Chart panel
 
@@ -220,7 +220,7 @@ Manual **Buy/Sell** with limit or market type, price and quantity spinners, **25
 
 Dual-sided depth (asks/bids) with cumulative coins and USDT, spread line, sortable price columns, optional **highlight my resting orders**, live protobuf depth feed.
 
-**Example:** running **MODE4** — watch your quote line stay at best bid/ask; when displaced by one tick, bot log should show a **re-quote** event while the book panel updates in the same second.
+When running **MODE4** — watch your quote line stay at best bid/ask; when displaced by one tick, bot log should show a **re-quote** event while the book panel updates in the same second.
 
 ## Activity panel
 
@@ -232,7 +232,7 @@ Three sub-tabs in one stack — all on the same panel so you never leave the boo
 
 ![Activity — Open Orders tab with cancel/modify actions](assets/activity-open-orders.png)
 
-**Example:** bot says order placed but nothing on book → **Open orders** with **all symbols** off, hit refresh; if still empty, filter **Debug Logs** by `order` trace id from the bot log line.
+When the bot says order placed but nothing on book → **Open orders** with **all symbols** off, hit refresh; if still empty, filter **Debug Logs** by `order` trace id from the bot log line.
 
 ## Account balances
 
@@ -250,13 +250,13 @@ Right-column **Funds** panel lists pending/confirmed deposits and withdrawals wi
 
 Separate tab — **Funds Full History** from SQLite: deposits and withdrawals with asset, status, amount, network, tx id, and timestamp. Filter by kind (all / deposit / withdrawal) and asset code; complements the live deposit notification stream in the top bar.
 
-**Example:** deposit hit the ticker but you need tx id for accounting → **Funds History**, filter **deposit**, copy network and tx fields; cross-check live **deposits** LED counter kept incrementing during the transfer.
+When a deposit hits the ticker but you need tx id for accounting → **Funds History**, filter **deposit**, copy network and tx fields; cross-check live **deposits** LED counter kept incrementing during the transfer.
 
 ## System Stats workspace
 
 Feed-health dashboard for incident triage — per-stream message totals, stale-feed count, average WebSocket age, API OK/OFF, debug log totals/errors, open-order cache size, and a per-feed **last data age** breakdown. Drives the same stale detection that triggers REST open-order refresh in the UI.
 
-**Example:** bot stopped firing **MODE1** but LEDs look green → **System Stats** → if **order book** last age is high while trades age is low, the book feed stalled even though tape runs; restart symbol switch or server before blaming bot config.
+When the bot stopped firing **MODE1** but LEDs look green → **System Stats** → if **order book** last age is high while trades age is low, the book feed stalled even though tape runs; restart symbol switch or server before blaming bot config.
 
 ![System Stats — feed health and stream diagnostics](assets/system-stats.png)
 
@@ -264,7 +264,7 @@ Feed-health dashboard for incident triage — per-stream message totals, stale-f
 
 **Multi Bot Profiles** — save named profiles (profile name, symbol, MODE1–MODE5, optional note) in the browser (`multiBotProfiles`), then **start/stop each profile independently** with its own `bot_id`. Run different modes on different symbols concurrently without overwriting the main Bot panel scratch config.
 
-**Example:** **MODE4** on `DNXUSDT` while **MODE2** grid runs on another pair — save each as a profile, start both from **Multi Bots**; main **Bot** panel stays your sandbox for the active symbol.
+**MODE4** on `DNXUSDT` while **MODE2** grid runs on another pair — save each as a profile, start both from **Multi Bots**; main **Bot** panel stays your sandbox for the active symbol.
 
 ## Debug Logs workspace
 
@@ -278,7 +278,7 @@ Searchable forensic stream from the debug WebSocket and client log batching (`/a
 - Counter strip — total, client, warnings, errors, order traces.
 - **Refresh** / **Clear View** — reload or wipe the on-screen buffer (server log file retained).
 
-**Example:** missed fill → search order id from **Activity → History**; open matching **order** kind lines, follow trace id into **bot** kind if automation was running; export bot logs from **Activity** if you need a file attachment.
+After a missed fill → search order id from **Activity → History**; open matching **order** kind lines, follow trace id into **bot** kind if automation was running; export bot logs from **Activity** if you need a file attachment.
 
 ![Debug Logs — filtered client log stream](assets/debug-logs.png)
 
