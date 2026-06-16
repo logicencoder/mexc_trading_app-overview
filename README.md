@@ -232,10 +232,6 @@ Three sub-tabs in one stack — all on the same panel so you never leave the boo
 
 ![Activity — Open Orders tab with cancel/modify actions](assets/activity-open-orders.png)
 
-![Activity — History tab with REST refresh](assets/activity-history.jpg)
-
-![Activity — Bot Logs tab (live stream when bot runs)](assets/activity-bot-logs.png)
-
 **Example:** bot says order placed but nothing on book → **Open orders** with **all symbols** off, hit refresh; if still empty, filter **Debug Logs** by `order` trace id from the bot log line.
 
 ## Account balances
