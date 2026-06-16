@@ -2,9 +2,9 @@
 
 ![MEXC Trading Dashboard — bot panel, order book, chart, and performance panel on one screen](assets/trading-dashboard.png)
 
-For years the goal was not a prettier MEXC skin — it was a **complete trading layout built from scratch**, with every panel placed and sized the way one operator actually works. Book, tape, balances, open orders, manual buttons, bot controls, and latency readouts on **one screen** — not five exchange browser tabs where book, orders, and balance live on separate pages and **freeze** just when volume moves and you need to cancel, modify, or re-quote immediately.
+The goal was a **complete trading layout built from scratch**, with every panel placed and sized the way one operator actually works. Book, tape, balances, open orders, manual buttons, bot controls, and latency readouts on **one screen** — so depth, open orders, and balances stay visible when volume moves and you need to cancel, modify, or re-quote immediately.
 
-The retail exchange layout never fit that workflow: too **small**, too **fixed**, too **slow** for someone who cares about reaction time, not marketing chrome. Building this meant iterating on **speed and stability** — fast protobuf WebSocket feeds, REST backfill when a private stream stalls, symbol-switch hygiene so old frames never paint the wrong market, asyncio bot paths, and a **Performance** panel that measures `place_order`, `order_ws_latency_ms`, and related timings instead of guessing whether a click landed.
+The retail exchange layout never fit that workflow: too **small**, too **fixed**, too **slow** for someone who cares about reaction time. Building this meant iterating on **speed and stability** — fast protobuf WebSocket feeds, REST backfill when a private stream stalls, symbol-switch hygiene so old frames never paint the wrong market, asyncio bot paths, and a **Performance** panel that measures `place_order`, `order_ws_latency_ms`, and related timings.
 
 The grid is **fully yours**: panels **collapse**, **drag** to reorder within each column, **resize** by pixel, tune row counts and heights in **Settings**, then **Save Layout** or **Snapshot UI** so you do not rebuild the desk every session. **MODE1–MODE5** automation, manual **Trading** buttons, **Activity → Open orders** with per-row **C** / **M**, and feed-health LEDs stay on the same view — because that is why it was built. Self-hosted on hardware you control; API keys stay local; traffic goes outbound to MEXC only.
 
@@ -24,17 +24,17 @@ The grid is **fully yours**: panels **collapse**, **drag** to reorder within eac
 | Diagnostics | System Stats and Debug Logs tabs, client log ingest, Performance panel |
 | Deployment | Shell launcher or optional Docker on the same host |
 
-## Speed-first design — why this is not five exchange tabs
+## Speed-first single-screen layout
 
-Browser exchange UIs are built for casual click-trading, not for **keeping everything in view when the book moves**. When best bid/ask shifts or volume prints spike, you need updated depth, your row in **Open orders**, and **C** / **M** / **Refresh** without alt-tabbing while a tab repaints stale data. This dashboard exists because **that reaction time is the product** — not an afterthought.
+When best bid/ask shifts or volume prints spike, you need updated depth, your row in **Open orders**, and **C** / **M** / **Refresh** on the same view. **Reaction time is the product** — book, orders, and balances stay together instead of scattered across browser tabs.
 
-| Problem on retail exchange tabs | What this app does instead |
-|--------------------------------|----------------------------|
-| Book, orders, balances on separate pages | One grid: **Order book**, **Activity → Open orders**, **Account balances**, **Live trades** visible together |
-| Stale depth after symbol change | Hard unsubscribe/resubscribe + anti-crossfeed; **System Stats** shows per-feed **last data age** |
-| No idea if your click “ landed” | **Performance** panel: `place_order` REST ms, `order_ws_latency_ms`, `order_first_render_ms`, order trace ids in **Debug Logs** |
-| Bot logic in a separate tool | **Bot panel** MODE1–MODE5 on the same screen as the book you are automating against |
-| Layout you cannot fix | Drag/collapse/resize panels; **Settings** heights; **Save Layout** persists your stack |
+| Capability | How the dashboard delivers it |
+|------------|--------------------------------|
+| Book, orders, balances together | One grid: **Order book**, **Activity → Open orders**, **Account balances**, **Live trades** visible at once |
+| Fresh depth after symbol change | Hard unsubscribe/resubscribe + anti-crossfeed; **System Stats** shows per-feed **last data age** |
+| Order placement feedback | **Performance** panel: `place_order` REST ms, `order_ws_latency_ms`, `order_first_render_ms`, order trace ids in **Debug Logs** |
+| Bot automation on the same desk | **Bot panel** MODE1–MODE5 beside the book you automate against |
+| Persistent custom layout | Drag/collapse/resize panels; **Settings** heights; **Save Layout** persists your stack |
 
 **Bot modes tied to book speed:** **MODE3 — Step Re-entry Ladder** (product name) places the next limit **Step Percent** away after each full fill. **MODE4 — Front of Book** re-quotes on **Poll Seconds** when your quote is no longer at best bid/ask. **MODE1** **PING/TAKE** fires inside your min/max band with **Ping Hold (ms)** between hits. **Manual path:** **Activity → Open orders** — **C** cancel, **M** modify, **Refresh** when the orders WebSocket stalls; no exchange submenu.
 
@@ -176,7 +176,7 @@ Read-only card listing the effective config the server will receive: mode, side,
 
 ## Performance panel — trade and bot latency
 
-The **Performance** panel (draggable, collapsible) tracks **how fast the stack reacts**, not just whether it runs:
+The **Performance** panel (draggable, collapsible) tracks **how fast the stack reacts** — REST place latency, WebSocket order events, and first render timing:
 
 - **Live** toggle — when on, polls `/api/bot/perf` every second; when off, manual **Refresh** only.
 - **Updated** — timestamp of last successful perf payload.
