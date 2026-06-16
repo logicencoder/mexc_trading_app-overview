@@ -2,11 +2,11 @@
 
 ![MEXC Trading Dashboard — bot panel, order book, chart, and performance panel on one screen](assets/trading-dashboard.png)
 
-This exists because **exchange layouts in the browser are frozen and slow** — five tabs open, the ladder moves, you click cancel or re-quote, and the page is still painting the old book. That latency is unacceptable when you are trading size on a thin pair or running a bot that must react to the **live depth ladder**, not a stale DOM snapshot from another tab. For years the plan was a **layout built from scratch** that matches how one person actually trades: book, tape, balances, open orders, manual buttons, and bot controls on **one screen**, sized and ordered by you, with **measured** place-to-WS-to-render latency instead of guessing.
+This exists because **exchange layouts in the browser are frozen and slow** — five tabs open, the **order book** already shows a new best bid/ask, you hit cancel or re-quote, and the page is still painting stale rows. That latency is unacceptable when you trade size on a thin pair or run a bot that must read the **live order book** and private order stream on the same screen, not a DOM snapshot from another tab. For years the plan was a **layout built from scratch** that matches how one person actually trades: book, tape, balances, open orders, manual buttons, and bot controls on **one screen**, sized and ordered by you, with **measured** place-to-WS-to-render latency instead of guessing.
 
 The product is a **self-hosted MEXC spot console** on hardware you control — protobuf WebSocket feeds (public depth + private orders), REST backfill when a stream stalls, symbol-switch hygiene so late frames never paint the wrong market, asyncio bot engine with sub-second re-quote paths, and a **Performance** panel that tracks `place_order`, `order_ws_latency_ms`, and related timings in milliseconds. Panels are **collapsible, draggable, resizable**, with **Save Layout** / **Snapshot UI** in Settings. API keys stay local; traffic goes outbound to MEXC only.
 
-**Typical flows:** market-make a thin pair → **MODE4** front-of-book re-quote while watching **Order book** + feed LEDs. React to shown liquidity → **MODE1** with min/max band + **dry run** first, then live **TAKE** or **PING**. Scale in with limits → **MODE3** step ladder after each full fill. One timed entry → **MODE5** arm **HH:MM:SS** with optional one-tick jump. Manual override → **Trading** panel limit/market with **25/50/75/100%** shortcuts. Tune the grid once → **Settings → Save Layout**. Something looks dead → **System Stats** for stale feed age → **Debug Logs** filtered by `order` or `perf`. Run two strategies → **Multi Bots** profiles on different symbols concurrently.
+**Typical flows:** market-make a thin pair → **MODE4** front-of-book re-quote while watching **Order book** + feed LEDs. React to shown liquidity → **MODE1** with min/max band + **dry run** first, then live **TAKE** or **PING**. Scale in with limits → **MODE3 Step Re-entry Ladder** after each full fill. One timed entry → **MODE5** arm **HH:MM:SS** with optional one-tick jump. Manual override → **Trading** panel limit/market with **25/50/75/100%** shortcuts. Tune the grid once → **Settings → Save Layout**. Something looks dead → **System Stats** for stale feed age → **Debug Logs** filtered by `order` or `perf`. Run two strategies → **Multi Bots** profiles on different symbols concurrently.
 
 ## Tech stack
 
@@ -24,7 +24,7 @@ The product is a **self-hosted MEXC spot console** on hardware you control — p
 
 ## Speed-first design — why this is not “another exchange tab”
 
-Browser exchange UIs optimize for marketing pages, not for **reaction time**. When the order book ladder shifts, you need the new best bid/ask, your resting order row, and a cancel/modify button **without alt-tabbing** or waiting for a heavy SPA to reflow. This dashboard is built around that constraint:
+Browser exchange UIs optimize for marketing pages, not for **reaction time**. When **best bid/ask moves** or volume prints shift the book, you need the updated depth, your resting order in **Open orders**, and **C** / **M** / **Refresh** **without alt-tabbing** or waiting for a heavy SPA to reflow. This dashboard is built around that constraint:
 
 | Problem on retail exchange tabs | What this app does instead |
 |--------------------------------|----------------------------|
@@ -34,7 +34,7 @@ Browser exchange UIs optimize for marketing pages, not for **reaction time**. Wh
 | Bot logic in a separate tool | **Bot panel** MODE1–MODE5 on the same screen as the book you are automating against |
 | Layout you cannot fix | Drag/collapse/resize panels; **Settings** heights; **Save Layout** persists your stack |
 
-**Ladder trading:** MODE3 **Step Re-entry Ladder** moves the next limit by **Step Percent** after each full fill; MODE4 **Front of Book** re-quotes on a **Poll Seconds** loop when displaced; MODE1 **PING/TAKE** reacts inside your min/max band with configurable **Ping Hold (ms)**. **Manual ladder:** **Activity → Open orders** shows **C** (cancel) and **M** (modify) on every row with **Refresh** when the orders WebSocket goes quiet — no hunting through exchange menus.
+**Bot modes tied to book speed:** **MODE3 — Step Re-entry Ladder** (product name) places the next limit **Step Percent** away after each full fill. **MODE4 — Front of Book** re-quotes on **Poll Seconds** when your quote is no longer at best bid/ask. **MODE1** **PING/TAKE** fires inside your min/max band with **Ping Hold (ms)** between hits. **Manual path:** **Activity → Open orders** — **C** cancel, **M** modify, **Refresh** when the orders WebSocket stalls; no exchange submenu.
 
 **Example:** front-of-book quote gets jumped → watch **Order book** update in the same second as **Bot logs**; open **Performance → Live** and confirm `place_order` and `order_ws_latency_ms` stay in a range you accept before sizing up.
 
@@ -62,7 +62,7 @@ Tune row counts, panel heights, and bot-related thresholds stored in `uiSettings
 |---------|------------|--------------|
 | **Live Trades Rows** | `uiTradesRows`, 1–500 | Max rows buffered in the public trade tape (also drives scroll depth). |
 | **Trades Height (px)** | `uiTradesHeight`, 140–2000 | Pixel height of the **Live trades** panel. |
-| **Orderbook Height (px)** | `uiOrderBookHeight`, 140–2000 | Pixel height of the dual-sided depth ladder. |
+| **Orderbook Height (px)** | `uiOrderBookHeight`, 140–2000 | Pixel height of the dual-sided **Order book** panel. |
 | **Chart Height (px)** | `uiChartHeight`, 200–2500 | TradingView / Custom chart viewport. |
 | **Activity Height (px)** | `uiActivityHeight`, 140–2000 | Open orders / History / Bot logs stack. |
 | **Funds Panel Height (px)** | `uiFundsHeight`, 160–2000 | Deposit/withdrawal notification stack on the right column. |
@@ -111,7 +111,7 @@ The left **Bot** column is the automation control center. Subsections collapse i
 |------|-----------------|
 | **MODE1 — Instant execution** | Watches live depth inside min/max band; fires **limit IOC** when liquidity appears (no resting quote). **Execution style:** **TAKE** (cross spread), **PING** (join level + hold), **50/50 ALTERNATE**, or **RANDOM** between TAKE/PING. **Ping Hold (ms)** pauses between fills. **Min Order Notional (USDT)** blocks exchange rejects. Built-in **cooldown** (~1s) and stuck-order recovery if cancel fails. |
 | **MODE2 — Grid limit orders** | Places one limit inside the band; **replenishes after each fill**. Optional **Random Price** picks a level within range. Uses same min/max, size caps, and budget guards as MODE1. |
-| **MODE3 — Step re-entry ladder** | One resting limit at a time. After each **full fill**, next price moves by **Step Percent (%)** from **Start Price** or last fill (**Use LAST fill as reference**). **Move price LOWER after fill** flips direction. Optional **Stop At Price** halts the ladder. **Continue until budget/balance ends** vs stop at stop price. |
+| **MODE3 — Step re-entry ladder** | One resting limit at a time. After each **full fill**, next price moves by **Step Percent (%)** from **Start Price** or last fill (**Use LAST fill as reference**). **Move price LOWER after fill** flips direction. Optional **Stop At Price** halts the step sequence. **Continue until budget/balance ends** vs stop at stop price. |
 | **MODE4 — Front of book** | Keeps **one limit at best bid/ask** plus **Jump Ticks** offset. **Re-quote when displaced** + **Poll Seconds** loop moves the quote when knocked off the front. |
 | **MODE5 — Scheduled exact** | Arms a **single limit at HH:MM:SS** with **Exact Price** and **Exact Quantity** (0 = auto from balance rules). Live **Countdown** + side/unit readout. **If someone ahead, jump one tick** uses top-of-book before submit. One shot per start (`_mode5_placed`). |
 
@@ -224,7 +224,7 @@ Dual-sided depth (asks/bids) with cumulative coins and USDT, spread line, sortab
 
 Three sub-tabs in one stack — all on the same panel so you never leave the book to manage resting liquidity:
 
-- **Open orders** — sortable table (Time, Coin, Side, Price, Qty, Status); **Current** vs all-symbol filter; **Refresh** REST backfill; per-row **C** cancel and **M** modify for fast ladder adjustments when the exchange WS hiccups.
+- **Open orders** — sortable table (Time, Coin, Side, Price, Qty, Status); **Current** vs all-symbol filter; **Refresh** REST backfill; per-row **C** cancel and **M** modify when the book moved but the orders feed lagged.
 - **History** — closed/canceled fills for the session; **Refresh** reloads from REST if the tab shows a load error.
 - **Bot logs** — streaming lines while a bot runs (SQLite-backed server-side); export for post-mortems.
 
