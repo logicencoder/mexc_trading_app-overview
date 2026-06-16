@@ -1,90 +1,252 @@
 # MEXC Trading Dashboard + Spot Bot
 
-![MEXC Trading Dashboard — live book, tape, balances, and bot controls](assets/trading-dashboard.png)
+![MEXC Trading Dashboard — bot panel, order book, chart, and performance panel on one screen](assets/trading-dashboard.png)
 
-Self-hosted **MEXC spot trading console** — live order book, trade tape, balances, open orders, fill history, deposit notifications, manual order buttons, and **five automation modes** in one browser dashboard on **a machine you control**. Active traders and bot operators keep API keys local; traffic goes outbound to MEXC only. The exchange retail UI scatters book, account, and bot state across pages and often shows **stale depth after a symbol change**; this product keeps everything on one screen with protobuf WebSocket feeds, REST backfill when a stream lags, and symbol-switch hygiene so old feeds do not paint the wrong market.
+This exists because **exchange layouts in the browser are frozen and slow** — five tabs open, the ladder moves, you click cancel or re-quote, and the page is still painting the old book. That latency is unacceptable when you are trading size on a thin pair or running a bot that must react to the **live depth ladder**, not a stale DOM snapshot from another tab. For years the plan was a **layout built from scratch** that matches how one person actually trades: book, tape, balances, open orders, manual buttons, and bot controls on **one screen**, sized and ordered by you, with **measured** place-to-WS-to-render latency instead of guessing.
 
-**Typical flows:** market-make a thin pair → **MODE4** front-of-book re-quote on the **Bot** panel while watching **Order book** + feed LEDs. React to shown liquidity → **MODE1** with min/max band + **dry run** first, then live **TAKE** or **PING** style. Scale in with limits → **MODE3** step ladder after each full fill. One timed entry → **MODE5** arm **HH:MM:SS** with optional one-tick jump. Manual override → **Trading** panel limit/market with **25/50/75/100%** shortcuts. Something looks dead → **System Stats** tab for stale feed age → **Debug Logs** filtered by `order` or `ws`. Run two strategies → **Multi Bots** profiles on different symbols concurrently.
+The product is a **self-hosted MEXC spot console** on hardware you control — protobuf WebSocket feeds (public depth + private orders), REST backfill when a stream stalls, symbol-switch hygiene so late frames never paint the wrong market, asyncio bot engine with sub-second re-quote paths, and a **Performance** panel that tracks `place_order`, `order_ws_latency_ms`, and related timings in milliseconds. Panels are **collapsible, draggable, resizable**, with **Save Layout** / **Snapshot UI** in Settings. API keys stay local; traffic goes outbound to MEXC only.
+
+**Typical flows:** market-make a thin pair → **MODE4** front-of-book re-quote while watching **Order book** + feed LEDs. React to shown liquidity → **MODE1** with min/max band + **dry run** first, then live **TAKE** or **PING**. Scale in with limits → **MODE3** step ladder after each full fill. One timed entry → **MODE5** arm **HH:MM:SS** with optional one-tick jump. Manual override → **Trading** panel limit/market with **25/50/75/100%** shortcuts. Tune the grid once → **Settings → Save Layout**. Something looks dead → **System Stats** for stale feed age → **Debug Logs** filtered by `order` or `perf`. Run two strategies → **Multi Bots** profiles on different symbols concurrently.
 
 ## Tech stack
 
 | Layer | Technologies |
 |-------|--------------|
 | Backend | Python 3, FastAPI, uvicorn, asyncio worker queues |
-| Bot engine | MODE1–MODE5 automation profiles, multi-bot registry |
+| Bot engine | MODE1–MODE5 automation profiles, multi-bot registry, perf metrics |
 | Frontend | HTML, CSS (Tailwind-style dark UI), vanilla JavaScript |
 | Exchange | MEXC Spot V3 REST + protobuf WebSocket |
 | Public streams | Aggregated deals, limit depth order book |
 | Private streams | Listen-key account, orders, deals; deposit poll + WS queue |
 | Persistence | SQLite for funds events, deals, and bot log history |
-| Diagnostics | System Stats and Debug Logs tabs, client log ingest |
+| Diagnostics | System Stats and Debug Logs tabs, client log ingest, Performance panel |
 | Deployment | Shell launcher or optional Docker on the same host |
+
+## Speed-first design — why this is not “another exchange tab”
+
+Browser exchange UIs optimize for marketing pages, not for **reaction time**. When the order book ladder shifts, you need the new best bid/ask, your resting order row, and a cancel/modify button **without alt-tabbing** or waiting for a heavy SPA to reflow. This dashboard is built around that constraint:
+
+| Problem on retail exchange tabs | What this app does instead |
+|--------------------------------|----------------------------|
+| Book, orders, balances on separate pages | One grid: **Order book**, **Activity → Open orders**, **Account balances**, **Live trades** visible together |
+| Stale depth after symbol change | Hard unsubscribe/resubscribe + anti-crossfeed; **System Stats** shows per-feed **last data age** |
+| No idea if your click “ landed” | **Performance** panel: `place_order` REST ms, `order_ws_latency_ms`, `order_first_render_ms`, order trace ids in **Debug Logs** |
+| Bot logic in a separate tool | **Bot panel** MODE1–MODE5 on the same screen as the book you are automating against |
+| Layout you cannot fix | Drag/collapse/resize panels; **Settings** heights; **Save Layout** persists your stack |
+
+**Ladder trading:** MODE3 **Step Re-entry Ladder** moves the next limit by **Step Percent** after each full fill; MODE4 **Front of Book** re-quotes on a **Poll Seconds** loop when displaced; MODE1 **PING/TAKE** reacts inside your min/max band with configurable **Ping Hold (ms)**. **Manual ladder:** **Activity → Open orders** shows **C** (cancel) and **M** (modify) on every row with **Refresh** when the orders WebSocket goes quiet — no hunting through exchange menus.
+
+**Example:** front-of-book quote gets jumped → watch **Order book** update in the same second as **Bot logs**; open **Performance → Live** and confirm `place_order` and `order_ws_latency_ms` stay in a range you accept before sizing up.
+
+## Custom layout — drag, collapse, resize, persist
+
+The **Trading** workspace is a three-column grid (`leftColumn`, `centerColumn`, `rightColumn`). Every major panel — **Bot Panel**, **Bot Settings Summary**, **Performance**, **Trading Panel**, **Chart**, **Order book**, **Activity**, **Account balances**, **Live trades**, **Funds** — has:
+
+- **Collapse** (▲/▼) to hide body content without losing the header strip.
+- **Drag handle** (⠿) to reorder panels within a column stack; order persists in `localStorage`.
+- **Height resize** on stack panels (trades, order book, chart, activity, funds) via bottom-edge drag; heights sync to Settings numeric fields.
+
+**Settings → Save Layout** writes panel order, collapse state, and heights. **Reset Layout** restores factory panel arrangement. **Snapshot UI** exports a JSON snapshot of the current layout + key UI toggles for sharing or backup. **Apply** / **Reset** in Settings only touch numeric/checkbox fields in the overlay (heights, rows, notification bar, bot-related thresholds) without wiping drag order unless you hit **Reset Layout**.
+
+**Example:** you want the **Order book** taller during a volatile session → drag the panel edge or raise **Orderbook Height (px)** in Settings → **Apply** → **Save Layout**. Next browser refresh keeps the same stack order and heights.
+
+## Settings menu — every control
+
+Open **⚙ Settings** in the top bar. The overlay has two sections plus action buttons at the bottom.
+
+### UI Layout
+
+Tune row counts, panel heights, and bot-related thresholds stored in `uiSettings` (`localStorage`):
+
+| Control | ID / range | What it does |
+|---------|------------|--------------|
+| **Live Trades Rows** | `uiTradesRows`, 1–500 | Max rows buffered in the public trade tape (also drives scroll depth). |
+| **Trades Height (px)** | `uiTradesHeight`, 140–2000 | Pixel height of the **Live trades** panel. |
+| **Orderbook Height (px)** | `uiOrderBookHeight`, 140–2000 | Pixel height of the dual-sided depth ladder. |
+| **Chart Height (px)** | `uiChartHeight`, 200–2500 | TradingView / Custom chart viewport. |
+| **Activity Height (px)** | `uiActivityHeight`, 140–2000 | Open orders / History / Bot logs stack. |
+| **Funds Panel Height (px)** | `uiFundsHeight`, 160–2000 | Deposit/withdrawal notification stack on the right column. |
+| **Tiny Leftover Threshold (USDT)** | `uiTinyLeftoverUSDT`, 0–1000 | Orders below this notional can be auto-cancelled as dust (0 = off). |
+| **Ping Hold (ms)** | `uiPingHoldMs`, 0–60000 | MODE1 **PING** style pause between fills (also sent to bot on start). |
+| **Min Order Notional (USDT)** | `uiMinOrderNotionalUSDT`, 0–1M | Exchange min-notional guard; bot skips sub-threshold sizes. |
+
+![Settings — UI Layout section with panel heights and bot thresholds](assets/settings-ui-layout.png)
+
+### Notifications & Search
+
+| Control | ID / range | What it does |
+|---------|------------|--------------|
+| **Show Timestamps** | `uiNotifShowTimestamp` | Append `hh:mm:ss` on each notification chip in the top ticker. |
+| **Max Chips** | `uiNotifMaxItems`, 1–200 | Visible chips in the scrollable notification bar (`notifSettings.maxItems`). |
+| **Notif Auto Hide (sec)** | `uiNotifTtlSeconds`, 0–86400 | TTL for ticker chips (0 = never auto-hide). |
+| **Notif Bar Height (px)** | `uiNotifBarHeight`, 18–60 | Vertical size of the notification strip (live-updates on input). |
+| **Deposits: Keep After Confirmed (sec)** | `uiDepositConfirmedKeepSec`, 0–86400 | How long confirmed deposit cards stay in the **Funds** stack. |
+| **Coin Search Width (%)** | `uiCoinSearchWidthPct`, 20–90 | Width of the symbol search field in the top bar. |
+
+**Apply** saves `uiSettings` + `notifSettings` fields above and reapplies heights immediately. **Reset** reloads defaults for those fields only.
+
+Additional notification filters live on the **Funds** panel header (not inside Settings): **Deposits**, **Withdrawals**, and **History** toggles (`fundsTickerDepositsToggle`, `fundsTickerWithdrawalsToggle`, `fundsTickerHistoryToggle`) control which fund events appear in the ticker and stack. **Clear** wipes the visible funds list. Bot log and connection noise in the ticker is gated by `notifSettings.includeBotLogs` and `includeConnections` (defaults off) — persisted separately in `localStorage`.
+
+![Settings — Notifications & Search with Apply, Save Layout, Snapshot UI, Reset Layout](assets/settings-notifications.png)
 
 ## Top bar — symbol, health, and alerts
 
 The header stays visible on every workspace tab:
 
 - **Live symbol** with last price and direction arrow; **symbol input** normalizes pairs (e.g. `DNX` → `DNXUSDT`) and switches the active market so public and private feeds unsubscribe the old pair before subscribing the new one.
-- **Feed LEDs** — trades, balances, orders, deals, deposits, order book, bot logs, status WebSocket, and REST API access — each with a message counter so you see which pipe is alive without opening logs.
+- **Feed LEDs** — trades, balances, orders, deals, deposits (notification count), order book, bot logs, status WebSocket, and REST API — each with a message counter so you see which pipe is alive without opening logs.
 - **Favorites** — star the active pair; up to five quick-switch buttons in the notification bar.
-- **Notification ticker** — scrollable bar for fills, deposits, withdrawals, bot events, and connection notices; filters and TTL live in Settings (bot logs, funds, connections).
-- **Settings menu** — panel heights (trades, order book, chart, activity), notification bar size, coin-search width, layout save/reset, UI snapshot export.
+- **Notification ticker** — scrollable bar with ◀/▶ stepping; honors Max Chips, TTL, timestamp toggle, and funds/bot/connection filters above.
+- **Settings** — layout and notification controls documented in the previous section.
 
 **Example:** you switched from `BTCUSDT` to `DNXUSDT` but the tape still shows old prints — check **msgTrades** and **order book** LED counters; if frozen, confirm symbol input applied and watch counters reset after resubscribe. Stale **orders** LED → open **Activity → Open orders** and hit REST refresh while **System Stats** shows orders feed age climbing.
 
-## Trading workspace layout
+## Bot panel — complete control reference
 
-The default **Trading** tab is a three-column, **drag-and-drop** dashboard. Every panel collapses, reorders (persisted in the browser), and resizes where allowed.
+The left **Bot** column is the automation control center. Subsections collapse independently (Mode Selection, Randomization, Bot Action, Execution Range, Mode Controls, Status & Controls). **Hide modes** collapses the five mode cards while keeping the rest of the panel usable.
 
-### Bot panel — five automation modes
+### Mode selection (MODE1–MODE5)
 
-The left **Bot** column is the automation control center: mode picker, buy/sell side, price range, sizing, budgets, randomization, presets, dry-run, start/stop, live status (executions, volume, safety halt), and a **Bot Settings Summary** card.
+| Mode | Engine behavior |
+|------|-----------------|
+| **MODE1 — Instant execution** | Watches live depth inside min/max band; fires **limit IOC** when liquidity appears (no resting quote). **Execution style:** **TAKE** (cross spread), **PING** (join level + hold), **50/50 ALTERNATE**, or **RANDOM** between TAKE/PING. **Ping Hold (ms)** pauses between fills. **Min Order Notional (USDT)** blocks exchange rejects. Built-in **cooldown** (~1s) and stuck-order recovery if cancel fails. |
+| **MODE2 — Grid limit orders** | Places one limit inside the band; **replenishes after each fill**. Optional **Random Price** picks a level within range. Uses same min/max, size caps, and budget guards as MODE1. |
+| **MODE3 — Step re-entry ladder** | One resting limit at a time. After each **full fill**, next price moves by **Step Percent (%)** from **Start Price** or last fill (**Use LAST fill as reference**). **Move price LOWER after fill** flips direction. Optional **Stop At Price** halts the ladder. **Continue until budget/balance ends** vs stop at stop price. |
+| **MODE4 — Front of book** | Keeps **one limit at best bid/ask** plus **Jump Ticks** offset. **Re-quote when displaced** + **Poll Seconds** loop moves the quote when knocked off the front. |
+| **MODE5 — Scheduled exact** | Arms a **single limit at HH:MM:SS** with **Exact Price** and **Exact Quantity** (0 = auto from balance rules). Live **Countdown** + side/unit readout. **If someone ahead, jump one tick** uses top-of-book before submit. One shot per start (`_mode5_placed`). |
 
-| Mode | Behavior |
-|------|----------|
-| **MODE1 — Instant execution** | Watches the live order book; when liquidity appears inside your min/max range, fires **limit IOC** orders (no resting liquidity). Execution style: **TAKE**, **PING**, **50/50 ALTERNATE**, or **RANDOM**; optional `ping_hold_ms` pause between fills. Cooldown and stuck-order recovery if a cancel fails. |
-| **MODE2 — Grid limit orders** | Places a limit inside the band and **replenishes after each fill**; optional random price pick within range. |
-| **MODE3 — Step re-entry ladder** | One limit at a time; after each **full fill**, moves the next order by a **step percent** from start price or last fill. Direction up/down, optional **stop price**, continue-until-budget vs stop-at-price. |
-| **MODE4 — Front of book** | Keeps **one resting limit at best bid/ask** (plus configurable tick jump); poll loop **re-quotes** when displaced from the front of the book. |
-| **MODE5 — Scheduled exact** | Arms a **single limit at HH:MM:SS** with exact price and quantity; live countdown; optional **one-tick jump** using top-of-book before submit. One shot per start. |
+Switching mode shows/hides **Mode Controls** and toggles which range fields apply (MODE5 hides classic min/max band UI when only exact price/qty matter).
 
-Shared bot limits (all modes that need them): min/max price band, per-order size, max order size cap, **total budget** in coins or USDT (`max_sum_use`), random price (MODE1/2) and random amount range, min-notional guard from exchange filters, **dry run**, and **safety halt** when budget is exhausted. **Presets** save/load/delete full bot configs in localStorage; **Multi Bots** (below) launches independent profiles with their own `bot_id`.
+![Bot panel — Mode Selection cards for MODE1 through MODE5](assets/bot-modes.png)
 
-**Example:** test a new band without risk → enable **dry run**, pick **MODE1**, set min/max around the current book, start bot, read lines in **Activity → Bot logs**. Ready for live → disable dry run, set **max_sum_use** in USDT, watch **safety halt** in the status card if budget hits zero mid-session.
+### Randomization
 
-### Trading panel — manual orders
+- **Random Price** — MODE1/2 pick non-deterministic prices inside the band (MODE1 book-level selection upstream).
+- **Random Amount (COINS)** — enable + **Min** / **Max** coin range per execution when you want size variation.
 
-Manual **Buy/Sell** with limit or market type, price and quantity spinners, **25/50/75/100%** balance shortcuts, quote/base preset buttons ($25–$250 / 0.1–1 coin), market **slippage tolerance**, server-side precision and min-notional checks, and REST refresh when the orders WebSocket goes stale.
+### Bot action
 
-**Example:** quick scale-out → **Sell**, **market**, **100%** base balance with slippage tolerance set in Settings; confirm fill in **Activity → History** and the notification ticker before starting **MODE2** on the other side.
+- **Side** — **Buy** / **Sell** tabs; start button label follows (`▶ Start Bot` / `▶ START BUY` / `▶ START SELL`).
+- **Presets** — name field + **Save Preset** / **Load** / **Delete**; full bot JSON in `localStorage` (`botPanelPresets`).
+- **Mute symbol switch ticker alerts** — suppresses noisy alerts when changing pair (`quietSymbolSwitchAlerts`).
 
-### Chart panel
+![Bot panel — Randomization, Bot Action side/presets, Execution Range min/max](assets/bot-random-action.png)
 
-**TradingView** embed or **Custom** placeholder chart tied to the active symbol; trading-allowed badge from exchange filters.
+### Execution range (shared safety envelope)
 
-### Order book
+| Control | Behavior |
+|---------|----------|
+| **Min Price / Max Price (USDT)** | Band for MODE1/2/3/4 book logic. |
+| **Max Order Size (COINS)** | Per-order cap; **0 = unlimited**. |
+| **Total Amount** + enable checkbox | Budget cap in coins or USDT (`max_sum_use`); triggers **safety halt** when exhausted. |
+| **Safety Limits Unit** | **COINS** vs **USDT** toggle for budget accounting. |
+
+### Mode-specific controls (visible per selected mode)
+
+**MODE1:** **TAKE / PING / 50/50 / RANDOM** style row; **Ping Hold (ms)**; **Min Order Notional (USDT)** with helper text about exchange min volume.
+
+![Bot panel — Execution Range, Max Order Size, MODE1 TAKE/PING controls](assets/bot-execution-range.png)
+
+**MODE3:** **Start Price**, **Step Percent (%)**, **Move price LOWER after fill**, **Use LAST fill as reference**, **Stop At Price** (+ enable), **Continue until budget/balance ends**.
+
+**MODE4:** **Re-quote when displaced**, **Poll Seconds**, **Jump Ticks**.
+
+**MODE5:** live **Side / Unit / Countdown** readouts; **Time (HH:MM:SS)**, **Exact Price**, **Exact Quantity (0=auto)**, **If someone ahead, jump one tick**.
+
+### Status & controls
+
+- **Status** — RUNNING / STOPPED with color indicator.
+- **Executions** — fill counter for the session.
+- **Total Volume** — spent base + USDT notional vs budget.
+- **Safety** — OK or halt reason when budget/limit hit.
+- **▶ Start Bot** / **■ Stop Bot** — REST start/stop; dry-run checkbox locked while running (`botDryRunRunning`).
+- **Dry Run** — simulates decisions without sending signed orders.
+
+![Bot panel — MODE1 style row, Status, Start/Stop, Dry Run](assets/bot-mode1-status.png)
+
+**Example:** test a new band without risk → enable **Dry Run**, pick **MODE1**, set min/max around the current book, choose **PING** + **Ping Hold 500**, start bot, read lines in **Activity → Bot logs**. Ready for live → disable dry run, enable **Total Amount** in USDT, watch **Safety** flip to halt if budget hits zero mid-session.
+
+## Bot Settings Summary panel
+
+Read-only card listing the effective config the server will receive: mode, side, execution style, symbol, price band, dry-run flag, unit, max order size, total budget, random flags, and mode-specific fields. Updates when you change any bot control or load a preset — use it as a pre-flight checklist before **Start Bot**.
+
+![Bot Settings Summary — effective MODE, side, exec style, range, dry-run, unit](assets/bot-settings-summary.png)
+
+## Performance panel — trade and bot latency
+
+The **Performance** panel (draggable, collapsible) tracks **how fast the stack reacts**, not just whether it runs:
+
+- **Live** toggle — when on, polls `/api/bot/perf` every second; when off, manual **Refresh** only.
+- **Updated** — timestamp of last successful perf payload.
+- **Bot** — `symbol | MODE | RUNNING/STOPPED`.
+- **Last Error** — most recent bot engine error string.
+- **Latency (ms)** table — backend metrics from `get_perf_metrics()` with `count`, `last`, `avg`, `min`, `max` per key:
+
+| Backend metric key | Measured operation |
+|--------------------|-------------------|
+| `place_order` | Signed REST place round-trip |
+| `mode1_finalize` | MODE1 post-fill finalize path |
+| `signed_get` | Signed GET helper latency |
+| `update_counters_from_order` | Budget/volume counter update from order WS |
+
+Appended below (client-side, no backend required):
+
+| Client metric key | Measured operation |
+|-------------------|-------------------|
+| `order_ws_latency_ms` | Time from place response to first private order WS update |
+| `order_first_update_ms` | First WS update after submit |
+| `order_first_render_ms` | First DOM render of the new/changed order row |
+| `order_final_elapsed_ms` | End-to-end trace until terminal order state |
+
+**Refresh** forces a fetch; **Reset View** clears the displayed table without wiping server counters. Order traces also log to **Debug Logs** (`kind=order`, `perf`) with searchable `traceId`.
+
+**Example:** MODE4 re-quotes feel sluggish → enable **Live**, fire one manual limit from **Trading**, watch `place_order` vs `order_ws_latency_ms`. High REST but low WS → network or MEXC API; high WS but high `order_first_render_ms` → UI path; cross-check **Debug Logs** filtered by `perf`.
+
+![Performance panel — Live toggle, bot meta, Latency (ms) table, Refresh / Reset View](assets/performance-panel.png)
+
+## Trading panel — manual orders
+
+Manual **Buy/Sell** with limit or market type, price and quantity spinners, **25/50/75/100%** balance shortcuts, quote/base preset buttons ($25–$250 / 0.1–1 coin on market amount group), market **slippage tolerance**, server-side precision and min-notional checks, and REST refresh when the orders WebSocket goes stale.
+
+**Example:** quick scale-out → **Sell**, **market**, **100%** base balance with slippage tolerance set; confirm fill in **Activity → History** and the notification ticker before starting **MODE2** on the other side.
+
+## Chart panel
+
+**TradingView** embed or **Custom** placeholder chart tied to the active symbol; **API trading: enabled** badge from exchange filters; **TV / Custom** toggle.
+
+## Order book
 
 Dual-sided depth (asks/bids) with cumulative coins and USDT, spread line, sortable price columns, optional **highlight my resting orders**, live protobuf depth feed.
 
 **Example:** running **MODE4** — watch your quote line stay at best bid/ask; when displaced by one tick, bot log should show a **re-quote** event while the book panel updates in the same second.
 
-### Activity panel
+## Activity panel
 
-Three sub-tabs in one stack:
+Three sub-tabs in one stack — all on the same panel so you never leave the book to manage resting liquidity:
 
-- **Open orders** — cancel/modify actions, current-symbol vs all-symbol toggle, REST refresh button.
-- **History** — recent closed/canceled orders for the session.
-- **Bot logs** — streaming bot log lines while a bot runs (also persisted server-side); export button for sharing after an incident.
+- **Open orders** — sortable table (Time, Coin, Side, Price, Qty, Status); **Current** vs all-symbol filter; **Refresh** REST backfill; per-row **C** cancel and **M** modify for fast ladder adjustments when the exchange WS hiccups.
+- **History** — closed/canceled fills for the session; **Refresh** reloads from REST if the tab shows a load error.
+- **Bot logs** — streaming lines while a bot runs (SQLite-backed server-side); export for post-mortems.
+
+![Activity — Open Orders tab with cancel/modify actions](assets/activity-open-orders.png)
+
+![Activity — History tab with REST refresh](assets/activity-history.jpg)
+
+![Activity — Bot Logs tab (live stream when bot runs)](assets/activity-bot-logs.png)
 
 **Example:** bot says order placed but nothing on book → **Open orders** with **all symbols** off, hit refresh; if still empty, filter **Debug Logs** by `order` trace id from the bot log line.
 
-### Account balances
+## Account balances
 
 Available, locked, and total per asset for monitored base/quote coins; privacy hide toggle and manual balance refresh.
 
-### Live trades tape
+## Live trades tape
 
-Public agg-deals stream: time, price, amount, USDT notional, side; trade count and last-price arrow in the panel header.
+Public agg-deals stream: time, price, amount, USDT notional, side; trade count and last-price arrow in the panel header; row count governed by **Live Trades Rows** in Settings.
+
+## Funds notification stack
+
+Right-column **Funds** panel lists pending/confirmed deposits and withdrawals with asset, network, amount, and status chips. Header toggles filter what reaches the top ticker. **Clear** removes visible cards; confirmed items respect **Deposits: Keep After Confirmed** from Settings.
 
 ## Funds History workspace
 
@@ -102,13 +264,21 @@ Feed-health dashboard for incident triage — per-stream message totals, stale-f
 
 ## Multi Bots workspace
 
-**Multi Bot Profiles** — save named profiles (symbol, MODE1–MODE5, optional note) in the browser, then **start/stop each profile independently**. Run different modes on different symbols concurrently without overwriting the main Bot panel config.
+**Multi Bot Profiles** — save named profiles (profile name, symbol, MODE1–MODE5, optional note) in the browser (`multiBotProfiles`), then **start/stop each profile independently** with its own `bot_id`. Run different modes on different symbols concurrently without overwriting the main Bot panel scratch config.
 
-**Example:** **MODE4** on `DNXUSDT` while **MODE2** grid runs on another pair — save each as a profile, start both from **Multi Bots**; main **Bot** panel stays your scratch config for the active symbol.
+**Example:** **MODE4** on `DNXUSDT` while **MODE2** grid runs on another pair — save each as a profile, start both from **Multi Bots**; main **Bot** panel stays your sandbox for the active symbol.
 
 ## Debug Logs workspace
 
-Searchable forensic stream from the debug WebSocket and client log batching: filter by level, kind (order, balance, bot, orderbook, funds, ws, perf, ui), and source; hide ping noise; search by trace id, order id, or plain-text query. Counters for total, client, warnings, errors, and order traces — same events land in a server-side log file for sharing after an incident.
+Searchable forensic stream from the debug WebSocket and client log batching (`/api/client-logs` mirror):
+
+- **Search** — trace id, order id, or plain-text query.
+- **Level** — All / ERROR / WARN / INFO / LOG / DEBUG.
+- **Kind** — order, balance, bot, orderbook, funds, ws, **perf**, ui, other.
+- **Source** — client, server, bot.
+- **Hide pings** — suppress WS keepalive noise (default on).
+- Counter strip — total, client, warnings, errors, order traces.
+- **Refresh** / **Clear View** — reload or wipe the on-screen buffer (server log file retained).
 
 **Example:** missed fill → search order id from **Activity → History**; open matching **order** kind lines, follow trace id into **bot** kind if automation was running; export bot logs from **Activity** if you need a file attachment.
 
@@ -119,6 +289,7 @@ Searchable forensic stream from the debug WebSocket and client log batching: fil
 - **Symbol switch** — unsubscribes old public depth/trades and rebinds private streams; anti-crossfeed ignores late frames from the previous symbol.
 - **Stale private feeds** — UI shows age in seconds; orders panel may run REST open-order refresh when the orders WebSocket stops updating.
 - **MEXC compliance** — client PING every 15s, listen-key extend, proactive WS rotate before 24h cap, signed REST orders with query-in-URL body pattern.
+- **Tiny leftover auto-cancel** — sub-threshold open orders on the active symbol can be cancelled when **Tiny Leftover Threshold (USDT)** is set in Settings.
 
 Private code: [mexc_trading_app](https://github.com/logicencoder/mexc_trading_app)
 
