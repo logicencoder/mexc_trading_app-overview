@@ -2,9 +2,11 @@
 
 ![MEXC Trading Dashboard — bot panel, order book, chart, and performance panel on one screen](assets/trading-dashboard.png)
 
-This exists because **exchange layouts in the browser are frozen and slow** — five tabs open, the **order book** already shows a new best bid/ask, you hit cancel or re-quote, and the page is still painting stale rows. That latency is unacceptable when you trade size on a thin pair or run a bot that must read the **live order book** and private order stream on the same screen, not a DOM snapshot from another tab. For years the plan was a **layout built from scratch** that matches how one person actually trades: book, tape, balances, open orders, manual buttons, and bot controls on **one screen**, sized and ordered by you, with **measured** place-to-WS-to-render latency instead of guessing.
+For years the goal was not a prettier MEXC skin — it was a **complete trading layout built from scratch**, with every panel placed and sized the way one operator actually works. Book, tape, balances, open orders, manual buttons, bot controls, and latency readouts on **one screen** — not five exchange browser tabs where book, orders, and balance live on separate pages and **freeze** just when volume moves and you need to cancel, modify, or re-quote immediately.
 
-The product is a **self-hosted MEXC spot console** on hardware you control — protobuf WebSocket feeds (public depth + private orders), REST backfill when a stream stalls, symbol-switch hygiene so late frames never paint the wrong market, asyncio bot engine with sub-second re-quote paths, and a **Performance** panel that tracks `place_order`, `order_ws_latency_ms`, and related timings in milliseconds. Panels are **collapsible, draggable, resizable**, with **Save Layout** / **Snapshot UI** in Settings. API keys stay local; traffic goes outbound to MEXC only.
+The retail exchange layout never fit that workflow: too **small**, too **fixed**, too **slow** for someone who cares about reaction time, not marketing chrome. Building this meant iterating on **speed and stability** — fast protobuf WebSocket feeds, REST backfill when a private stream stalls, symbol-switch hygiene so old frames never paint the wrong market, asyncio bot paths, and a **Performance** panel that measures `place_order`, `order_ws_latency_ms`, and related timings instead of guessing whether a click landed.
+
+The grid is **fully yours**: panels **collapse**, **drag** to reorder within each column, **resize** by pixel, tune row counts and heights in **Settings**, then **Save Layout** or **Snapshot UI** so you do not rebuild the desk every session. **MODE1–MODE5** automation, manual **Trading** buttons, **Activity → Open orders** with per-row **C** / **M**, and feed-health LEDs stay on the same view — because that is why it was built. Self-hosted on hardware you control; API keys stay local; traffic goes outbound to MEXC only.
 
 **Typical flows:** market-make a thin pair → **MODE4** front-of-book re-quote while watching **Order book** + feed LEDs. React to shown liquidity → **MODE1** with min/max band + **dry run** first, then live **TAKE** or **PING**. Scale in with limits → **MODE3 Step Re-entry Ladder** after each full fill. One timed entry → **MODE5** arm **HH:MM:SS** with optional one-tick jump. Manual override → **Trading** panel limit/market with **25/50/75/100%** shortcuts. Tune the grid once → **Settings → Save Layout**. Something looks dead → **System Stats** for stale feed age → **Debug Logs** filtered by `order` or `perf`. Run two strategies → **Multi Bots** profiles on different symbols concurrently.
 
@@ -22,9 +24,9 @@ The product is a **self-hosted MEXC spot console** on hardware you control — p
 | Diagnostics | System Stats and Debug Logs tabs, client log ingest, Performance panel |
 | Deployment | Shell launcher or optional Docker on the same host |
 
-## Speed-first design — why this is not “another exchange tab”
+## Speed-first design — why this is not five exchange tabs
 
-Browser exchange UIs optimize for marketing pages, not for **reaction time**. When **best bid/ask moves** or volume prints shift the book, you need the updated depth, your resting order in **Open orders**, and **C** / **M** / **Refresh** **without alt-tabbing** or waiting for a heavy SPA to reflow. This dashboard is built around that constraint:
+Browser exchange UIs are built for casual click-trading, not for **keeping everything in view when the book moves**. When best bid/ask shifts or volume prints spike, you need updated depth, your row in **Open orders**, and **C** / **M** / **Refresh** without alt-tabbing while a tab repaints stale data. This dashboard exists because **that reaction time is the product** — not an afterthought.
 
 | Problem on retail exchange tabs | What this app does instead |
 |--------------------------------|----------------------------|
