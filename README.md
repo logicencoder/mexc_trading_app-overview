@@ -295,7 +295,7 @@ See [REPOS.md](REPOS.md).
 
 ---
 
-## Feature examples (two per capability)
+## Operator workflows
 
 #### Realtime public market WebSocket
 1. Public trades stream updates the Live Trades panel without refresh.
