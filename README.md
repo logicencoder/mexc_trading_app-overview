@@ -55,7 +55,7 @@ The Multi Bots workspace supports reviewing more than one configured bot context
 
 ## Keep the workspace usable
 
-Notification, search and presentation settings support different working routines. Saved layouts reduce repeated setup, and resizable views help balance detail with overview. The supplied captures cover many areas, although several need replacement with higher-resolution originals.
+Notification, search and presentation settings support different working routines. Saved layouts reduce repeated setup, and resizable views help balance detail with overview.
 
 ---
 
