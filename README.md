@@ -1,4 +1,4 @@
-# MEXC Trading Dashboard + Spot Bot
+# MEXC Trading Dashboard
 
 ![MEXC Trading Dashboard — bot panel, order book, chart, and performance panel on one screen](assets/trading-dashboard.png)
 
@@ -93,7 +93,7 @@ Additional notification filters live on the **Funds** panel header (not inside S
 
 ## Top bar — symbol, health, and alerts
 
-The header stays visible on every workspace tab:
+Move, resize and collapse supported panels to match the work at hand. Layout preferences and display controls help keep frequently used information close together. Symbol and connection information remain visible so the operator can recognise the market and the state of the session.
 
 - **Live symbol** with last price and direction arrow; **symbol input** normalizes pairs (e.g. `DNX` → `DNXUSDT`) and switches the active market so public and private feeds unsubscribe the old pair before subscribing the new one.
 - **Feed LEDs** — trades, balances, orders, deals, deposits (notification count), order book, bot logs, status WebSocket, and REST API — each with a message counter so you see which pipe is alive without opening logs.
@@ -218,7 +218,7 @@ For a quick scale-out → **Sell**, **market**, **100%** base balance with slipp
 
 ## Order book
 
-Dual-sided depth (asks/bids) with cumulative coins and USDT, spread line, sortable price columns, optional **highlight my resting orders**, live protobuf depth feed.
+The configured action choices belong to the selected automation setup. Review their intended effect alongside the strategy rather than treating a preset as a substitute for that decision.
 
 When running **MODE4** — watch your quote line stay at best bid/ask; when displaced by one tick, bot log should show a **re-quote** event while the book panel updates in the same second.
 
@@ -236,7 +236,7 @@ When the bot says order placed but nothing on book → **Open orders** with **al
 
 ## Account balances
 
-Available, locked, and total per asset for monitored base/quote coins; privacy hide toggle and manual balance refresh.
+![MEXC Trading Dashboard — Configure automation deliberately](assets/bot-settings-summary.png)
 
 ## Live trades tape
 
@@ -246,21 +246,21 @@ Public agg-deals stream: time, price, amount, USDT notional, side; trade count a
 
 Right-column **Funds** panel lists pending/confirmed deposits and withdrawals with asset, network, amount, and status chips. Header toggles filter what reaches the top ticker. **Clear** removes visible cards; confirmed items respect **Deposits: Keep After Confirmed** from Settings.
 
-## Funds History workspace
+Activity and system views support monitoring more than one running task. They keep order follow-up and operating context accessible without crowding the main market view.
 
-Separate tab — **Funds Full History** from SQLite: deposits and withdrawals with asset, status, amount, network, tx id, and timestamp. Filter by kind (all / deposit / withdrawal) and asset code; complements the live deposit notification stream in the top bar.
+![MEXC Trading Dashboard — Manage several activities](assets/activity-open-orders.png)
 
 When a deposit hits the ticker but you need tx id for accounting → **Funds History**, filter **deposit**, copy network and tx fields; cross-check live **deposits** LED counter kept incrementing during the transfer.
 
-## System Stats workspace
+![MEXC Trading Dashboard — Manage several activities](assets/system-stats.png)
 
-Feed-health dashboard for incident triage — per-stream message totals, stale-feed count, average WebSocket age, API OK/OFF, debug log totals/errors, open-order cache size, and a per-feed **last data age** breakdown. Drives the same stale detection that triggers REST open-order refresh in the UI.
+Debug logs help explain an interruption or an order event that needs closer review. They retain a focused investigation path within the workstation.
 
 When the bot stopped firing **MODE1** but LEDs look green → **System Stats** → if **order book** last age is high while trades age is low, the book feed stalled even though tape runs; restart symbol switch or server before blaming bot config.
 
-![System Stats — feed health and stream diagnostics](assets/system-stats.png)
+## Keep the workspace usable
 
-## Multi Bots workspace
+Notification, search and presentation settings support different working routines. Saved layouts reduce repeated setup, and resizable views help balance detail with overview.
 
 **Multi Bot Profiles** — save named profiles (profile name, symbol, MODE1–MODE5, optional note) in the browser (`multiBotProfiles`), then **start/stop each profile independently** with its own `bot_id`. Run different modes on different symbols concurrently without overwriting the main Bot panel scratch config.
 
@@ -295,4 +295,8 @@ See [REPOS.md](REPOS.md).
 
 ---
 
-**Made by [Logic Encoder](https://logicencoder.com)** · [GitHub](https://github.com/logicencoder) · [Contact](https://logicencoder.com/contact/)
+Private code: [mexc_trading_app](https://github.com/logicencoder/mexc_trading_app)
+
+See [REPOS.md](REPOS.md) for related repositories.
+
+**[Logic Encoder](https://logicencoder.com)** · [GitHub](https://github.com/logicencoder) · [Contact](https://logicencoder.com/contact/)
