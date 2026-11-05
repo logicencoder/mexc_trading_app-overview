@@ -13,7 +13,7 @@ Active trading can require repeatedly moving between a chart, order book, balanc
 
 ## Arrange the trading desk
 
-Move, resize and collapse supported panels to match the work at hand. Layout preferences and display controls help keep frequently used information close together. Symbol and connection information remain visible so the operator can recognise the market and the state of the session.
+Panels can be moved, resized and collapsed, and the arrangement is stored with **Save Layout** and restored with **Reset Layout**; **Snapshot UI** captures the current screen. The selected symbol and the connection state stay visible in the header, and notification preferences decide which events are announced during a session.
 
 A trading session can involve several questions at once. Layout preferences let the operator keep the current task prominent while retaining the supporting views needed for the next decision.
 
@@ -25,13 +25,13 @@ Notification preferences let the operator choose which events deserve attention 
 
 ## Inspect the market
 
-The chart, order book and live trade tape provide different views of current activity. Search and symbol controls make it easier to move between markets, while available notifications draw attention to relevant changes. These views support judgement rather than replacing it.
+The market view combines a chart (a TradingView chart that can be switched on and off), the order book with its depth and the live trades tape. Symbol search moves between markets, and all views follow the selected symbol.
 
 Price, depth and recent trades provide context before an order is submitted. Keep the selected symbol aligned across the available views while examining the market.
 
 ## Place and follow manual orders
 
-Order entry sits beside account balances and activity panels, helping connect a proposed trade with available funds and existing orders. Open-order and recent-activity information support checking what happened after an action. Funds notifications and history add another view of account movement.
+The Trading Panel places buy and sell orders beside the account balances. Size shortcuts set 25, 50, 75 or 100 percent of the available funds, or a fixed 25, 50, 100 or 250 dollars, or a custom amount. Open orders, the live stream of deals and the **Funds History** tab (with deposit tracking) show what happened after an action.
 
 Open orders and their immediate feedback make follow-up part of the same task as entry. Review the current activity before changing or replacing an existing order.
 
@@ -39,7 +39,7 @@ Open orders and their immediate feedback make follow-up part of the same task as
 
 ## Configure automation deliberately
 
-Bot controls expose the supported modes, action choices and execution ranges. Mode-specific settings and a summary of the current configuration help the operator understand the selected behaviour before starting it. Status and stop controls remain part of the operating workflow.
+The Bot Panel offers five modes: **Mode 1 Instant Execution** takes orders from other traders inside a price range with market orders (with an execution style of TAKE, PING, 50/50 or RANDOM); **Mode 2 Grid Limit Orders** places layered limit orders and replenishes them when filled; **Mode 3 Step Re-entry Ladder** places one order and moves the price by a percentage after each full fill until a stop rule or the budget is reached; **Mode 4 Front of Book** keeps one order at the best bid or ask and re-quotes one tick ahead when displaced; **Mode 5 Scheduled Exact** places one exact limit order at a set time (HH:MM:SS), optionally with a one-tick jump. Side (buy or sell), quantity in coins or in USDT, the price range, optional randomisation of price and amount and the budget are set per mode.
 
 Mode selection changes the kind of automation being configured. Review the selected strategy, size and relevant controls together so the intended behaviour is understandable before a bot starts.
 
