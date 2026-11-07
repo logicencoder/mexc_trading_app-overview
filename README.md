@@ -91,3 +91,5 @@ Private code: [mexc_trading_app](https://github.com/logicencoder/mexc_trading_ap
 See [REPOS.md](REPOS.md) for related repositories.
 
 **[Logic Encoder](https://logicencoder.com)** · [GitHub](https://github.com/logicencoder) · [Contact](https://logicencoder.com/contact/)
+
+<!-- TODO(screenshots, 2026-11-07): optional: updated captures -->
